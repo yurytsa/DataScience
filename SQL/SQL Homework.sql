@@ -161,3 +161,6 @@ order by 1,2,3
 
 SELECT * FROM [College].[dbo].[vw_StudentsInfo]
 
+
+-- The end
+
