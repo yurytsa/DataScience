@@ -49,7 +49,7 @@ max(v1)
 mean(v1)
 summary(v1)
 
-### generate a vector of characters
+v2 <- ### generate a vector of characters
 v2 <- c("Yes","No","No","Yes","No","Yes","No","No")
 summary(v2)
 table(v2)
