@@ -5,8 +5,13 @@ library(dplyr)
 library(ggplot2)
 
 ### Import the titanic dataset
-titanic <- read.csv(paste(path,"../data/titanic.csv",sep="/"))
-head(titanic)
+#titanic <- read.csv("../Documents/DataScience/data/titanic.csv",sep="/")
+#head(titanic)
+
+library(readr)
+titanic <- read_csv("DataScience/data/titanic.csv")
+View(titanic)
+
 
 ##################################################
 ### Number of pasangers and how much survived
@@ -39,6 +44,7 @@ sapply(titanic, function(x) sum(is.na(x)))
 
 ## using table()
 table(sex=titanic$Sex, surv=titanic$Survived)
+
 
 ## using dplyr
 titanic %>% group_by(Sex) %>% summarise(count=n(),survived=sum(Survived),percent=(sum(Survived)/n()*100))
@@ -110,7 +116,14 @@ titanic %>%
 ## Passenger Class and Survival
 ## Was there any difference in the survival among passangers by their ticket class (Pclass) ?
 #####################################
+#######################################
+## Embarking port and survival
+## Was there any difference in survival related to the embarking port?
+#######################################
 
+titanic %>% 
+  group_by(Embarked) %>% 
+  summarise(count=n(),survived=sum(Survived),percent=(sum(Survived)/n()*100))
 titanic %>% 
   group_by(Pclass) %>% 
   summarise(count=n(),survived=sum(Survived),percent=(sum(Survived)/n()*100))
@@ -126,14 +139,7 @@ titanic %>%
   group_by(TravelAlone) %>% 
   summarise(count=n(),survived=sum(Survived),percent=(sum(Survived)/n()*100))
 
-#######################################
-## Embarking port and survival
-## Was there any difference in survival related to the embarking port?
-#######################################
 
-titanic %>% 
-  group_by(Embarked) %>% 
-  summarise(count=n(),survived=sum(Survived),percent=(sum(Survived)/n()*100))
 
 #######################################
 ## Paid fair and survival
