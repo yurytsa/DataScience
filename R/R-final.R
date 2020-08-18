@@ -27,9 +27,9 @@ teachers = dbGetQuery(conn, "SELECT * FROM Teachers;")
 courses = dbGetQuery(conn, "SELECT * FROM Courses;") 
 departments = dbGetQuery(conn, "SELECT * FROM Departments;")
 
-stud_class <- dplyr::inner_join(students, classrooms, by="StudentId")
-stud_class_course <- dplyr::inner_join(stud_class, courses, by="CourseId")
-stud_class_course_dep <- dplyr::inner_join(stud_class_course, departments, by=c("DepartmentID" = "DepartmentId"))
+stud_class <- inner_join(students, classrooms, by="StudentId")
+stud_class_course <- inner_join(stud_class, courses, by="CourseId")
+stud_class_course_dep <- inner_join(stud_class_course, departments, by=c("DepartmentID" = "DepartmentId"))
 
 
  
@@ -74,23 +74,101 @@ res3
 
 #Q4. A feminist student claims that there are more male than female in the College. Justify if the argument is correct
 
+res4 <- students %>% 
+  group_by(Gender) %>%
+  summarise(num_students = n(),)
+res4
 
 #Q5. For which courses the percentage of male/female students is over 70%?
+
+res5 <- stud_class_course_dep %>% 
+  group_by(CourseId, CourseName, Gender) %>%
+  summarise ( studs = n() ) %>%
+  mutate(students_percent = studs * 100 / sum(studs))  %>% 
+  filter(students_percent > 70)
+  
+res5 <- subset(res5, select = -c(studs))
+
+res5  
 
 
 #Q6. For each department, how many students passed with a grades over 80?
 
+res6 <- stud_class_course_dep %>% 
+  group_by(DepartmentName) %>%
+  mutate(total_studs = n_distinct(StudentId)) %>%
+  filter(degree > 80) %>% 
+  distinct(StudentId, DepartmentName, .keep_all = TRUE) %>%
+  group_by(DepartmentName) %>%
+  summarise(
+    students_80 = n(),
+    total_students = max(total_studs),
+    students_80_pct = sprintf("%.3f", students_80 * 100 / total_students))
+
+res6
 
 #Q7. For each department, how many students passed with a grades under 60?
+
+res7 <- stud_class_course_dep %>% 
+  group_by(DepartmentName) %>%
+  mutate(total_studs = n_distinct(StudentId)) %>%
+  filter(degree < 60) %>% 
+  distinct(StudentId, DepartmentName, .keep_all = TRUE) %>%
+  group_by(DepartmentName) %>%
+  summarise(
+    students_60 = n(),
+    total_students = max(total_studs),
+    students_60_pct = sprintf("%.3f", students_60 * 100 / total_students))
+
+res7
 
 
 #Q8. Rate the teachers by their average student's grades (in descending order).
 
+res8 <- cbind(stud_class_course_dep)
+res8 <- subset(res8, select = -c(FirstName, LastName, Gender))
+res8 <- inner_join(res8, teachers, by="TeacherId")
+res8 <- subset(res8, select = -c(TeacherId))
+res8 <- res8 %>%
+  mutate(teacher = paste(trimws(FirstName), ' ', trimws(LastName))) %>%  
+  group_by(teacher) %>%
+  summarize(
+      avg_degrees = mean(degree)
+  ) %>%
+  arrange(desc(avg_degrees))
+
+res8
+ 
 
 #Q9. Create a dataframe showing the courses, departments they are associated with, the teacher in each course, and the number of students enrolled in the course (for each course, department and teacher show the names).
-
+res9 <- cbind(stud_class_course_dep)
+res9 <- subset(res9, select = -c(FirstName, LastName, Gender))
+res9 <- inner_join(res9, teachers, by="TeacherId")
+res9$FirstName = trimws(res9$FirstName)
+res9 <- res9 %>%
+  group_by(CourseId,CourseName,DepartmentName,FirstName,LastName) %>%
+  summarise(students = n())
+res9
 
 #Q10. Create a dataframe showing the students, the number of courses they take, the average of the grades per class, and their overall average (for each student show the student name).
 
+library(tidyverse)
+
+studs_aggr <- cbind(stud_class_course_dep)
+studs_aggr <- studs_aggr %>% 
+      group_by(StudentId) %>%
+      summarise(
+        total_avg_degree = mean(degree),
+        courses = n())
 
 
+res10 <- cbind(stud_class_course_dep)
+res10$FirstName = trimws(res10$FirstName)
+res10 <- res10 %>%
+  group_by(StudentId, FirstName, LastName, DepartmentName) %>%
+  summarise(
+            avg_degree = mean(degree)) %>% 
+  pivot_wider(names_from = "DepartmentName", values_from = "avg_degree")  
+
+res10 <- inner_join(res10, studs_aggr, by='StudentId')
+res10
