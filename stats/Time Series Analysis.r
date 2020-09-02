@@ -2,9 +2,12 @@
 
 dts <- ts(AirPassengers, start=c(1949,1), end=c(1960,12), frequency=12)
 
-## change the size of the graphs
+dt## change the size of the graphs
 options(repr.plot.width = 8, repr.plot.height = 8)
-plot(dts)
+plot(dts, xlab="Years", ylab="Number of passengers")
+grid(nx = NULL, ny = nx, col = "lightgray", lty = "dotted",
+     lwd = par("lwd"), equilogs = TRUE)
+
 
 stationary_dts <- decompose(dts)
 

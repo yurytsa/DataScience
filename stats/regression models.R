@@ -17,6 +17,7 @@ data(cars)
 hist(cars$speed)
 hist(cars$dist)
 
+
 ###### Model
 mod1 <- lm(cars$dist ~ cars$speed)
 pred1 <- predict(mod1)
@@ -30,7 +31,6 @@ plot(pred1 ~ cars$dist)
 ##### summary
 summary(mod1)
 
-Table2(mod1)
 
 ############################
 ### Multivariate Analysis 
@@ -54,14 +54,16 @@ summary(mod2)
 ### model with two variables
 mod3 <- lm(mpg ~ wt + cyl,data=mtcars)
 summary(mod3)
-  
+pred3 <- predict(mod3)
+plot(pred3 ~ mtcars$mpg)
+
 Table2(mod3)
 
 ### model with three variables
-mod4 <- lm(mpg ~ wt + cyl + hp,data=mtcars)
+mod4 <- lm(mpg ~ wt + hp,data=mtcars)
 summary(mod4)
 
-Table2(mod4)
+#Table2(mod4)
 
 ### multivariable model
 mod5 <- lm(mpg ~ . ,data=mtcars)
@@ -78,7 +80,7 @@ pairs(mtcars)
 
 ######################
 
-bodyfat <- read.csv("~/BIDS/stats/bodyfat.tab", sep="")
+bodyfat <- read.csv("~/DataScience/data/bodyfat.csv")
 
 ############################################
 ##   Logistic Regression
