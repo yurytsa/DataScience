@@ -14,7 +14,7 @@ acf(dts)
 
 pacf(dts)
 
-dts_arima <- arima(dts, order=c(2,0,0))
+dts_arima <- arima(dts, order=c(2,1,1))
 dts_arima
 
 BIC(dts_arima)
