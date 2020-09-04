@@ -29,7 +29,7 @@ from(
 		 [dbo].[Courses] c on c.DepartmentID = d.DepartmentId and d.DepartmentName = 'English' inner join
 		 [dbo].[Classrooms] cr on cr.CourseId = c.CourseId inner join 
 		 [dbo].[Students] s on s.StudentId = cr.StudentId
-) r
+) r1
 
 
 
