@@ -1,5 +1,7 @@
 
+library(readr)
 mammalsleep <- read_csv("DataScience/data/mammalsleep.csv")
+View(mammalsleep)
 
 summary(mammalsleep)
 
