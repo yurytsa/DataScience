@@ -1,0 +1,174 @@
+###R Intro - Final Exercise
+
+
+library(DBI)
+library(dplyr)
+
+### In windows, Using a ODBC DNS (predefined connection name)
+### Some possible strings for the driver:
+### the DSN must be the same as you created in the ODBC (check it!)
+#driver <- "Driver={SQL Server};DSN=College;Trusted_Connection=yes;"
+
+driver <- "Driver={SQL Server Native Connection 11.0};DSN=College;Trusted_Connection=yes;"
+
+### XXXXX\\XXXXX is the name of the server as it appears in the SQL server management studio
+### COLLEGE is the name of the database (check how do you called it in your local server)
+#driver <- "Driver={SQL Server Native Connection 11.0};Server=YURYT-LT\\DS11;Database=College;Trusted_Connection=True;"
+
+
+### Try with the diferent driver strings to see what works for you
+conn <- dbConnect(odbc::odbc(), connection_string = driver)
+
+
+### Get the students table
+students = dbGetQuery(conn, "SELECT * FROM Students;") 
+classrooms = dbGetQuery(conn, "SELECT * FROM Classrooms;") 
+teachers = dbGetQuery(conn, "SELECT * FROM Teachers;") 
+courses = dbGetQuery(conn, "SELECT * FROM Courses;") 
+departments = dbGetQuery(conn, "SELECT * FROM Departments;")
+
+stud_class <- inner_join(students, classrooms, by="StudentId")
+stud_class_course <- inner_join(stud_class, courses, by="CourseId")
+stud_class_course_dep <- inner_join(stud_class_course, departments, by=c("DepartmentID" = "DepartmentId"))
+
+
+ 
+###Questions
+#Q1. Count the number of students on each department
+
+res1 <- stud_class_course_dep %>%
+  distinct(StudentId, DepartmentName, .keep_all = TRUE) %>%
+  group_by(DepartmentName) %>%
+  summarise(num_students = n(),)
+
+res1
+
+
+#Q2. How many students have each course of the English department and the total number of students in the department?
+
+res2_1 = stud_class_course_dep %>% 
+  filter(DepartmentName == 'English') %>%
+  group_by(CourseName) %>% 
+  summarise(num_students = n(),)
+res2_1
+
+res2_2 <- stud_class_course_dep %>% 
+  filter(DepartmentName == 'English') %>%
+  distinct(StudentId, .keep_all = TRUE) %>%
+  group_by() %>% 
+  summarise(num_students = n(),)
+res2_2  
+
+
+#Q3. How many small (<22 students) and large (22+ students) classrooms are needed for the Science department?
+
+res3 = stud_class_course_dep %>% 
+  filter(DepartmentName == 'Science') %>%
+  group_by(CourseId) %>% 
+  summarise(num_students = n(),) %>% 
+  mutate(classroom_size = ifelse(num_students < 22,"Small classrooms",'Big classrooms'))  %>% 
+  group_by(classroom_size) %>% 
+  summarise(num_classrooms = n(),)
+res3
+
+
+#Q4. A feminist student claims that there are more male than female in the College. Justify if the argument is correct
+
+res4 <- students %>% 
+  group_by(Gender) %>%
+  summarise(num_students = n(),)
+res4
+
+#Q5. For which courses the percentage of male/female students is over 70%?
+
+res5 <- stud_class_course_dep %>% 
+  group_by(CourseId, CourseName, Gender) %>%
+  summarise ( studs = n() ) %>%
+  mutate(students_percent = studs * 100 / sum(studs))  %>% 
+  filter(students_percent > 70)
+  
+res5 <- subset(res5, select = -c(studs))
+
+res5  
+
+
+#Q6. For each department, how many students passed with a grades over 80?
+
+res6 <- stud_class_course_dep %>% 
+  group_by(DepartmentName) %>%
+  mutate(total_studs = n_distinct(StudentId)) %>%
+  filter(degree > 80) %>% 
+  distinct(StudentId, DepartmentName, .keep_all = TRUE) %>%
+  group_by(DepartmentName) %>%
+  summarise(
+    students_80 = n(),
+    total_students = max(total_studs),
+    students_80_pct = sprintf("%.3f", students_80 * 100 / total_students))
+
+res6
+
+#Q7. For each department, how many students passed with a grades under 60?
+
+res7 <- stud_class_course_dep %>% 
+  group_by(DepartmentName) %>%
+  mutate(total_studs = n_distinct(StudentId)) %>%
+  filter(degree < 60) %>% 
+  distinct(StudentId, DepartmentName, .keep_all = TRUE) %>%
+  group_by(DepartmentName) %>%
+  summarise(
+    students_60 = n(),
+    total_students = max(total_studs),
+    students_60_pct = sprintf("%.3f", students_60 * 100 / total_students))
+
+res7
+
+
+#Q8. Rate the teachers by their average student's grades (in descending order).
+
+res8 <- cbind(stud_class_course_dep)
+res8 <- subset(res8, select = -c(FirstName, LastName, Gender))
+res8 <- inner_join(res8, teachers, by="TeacherId")
+res8 <- subset(res8, select = -c(TeacherId))
+res8 <- res8 %>%
+  mutate(teacher = paste(trimws(FirstName), ' ', trimws(LastName))) %>%  
+  group_by(teacher) %>%
+  summarize(
+      avg_degrees = mean(degree)
+  ) %>%
+  arrange(desc(avg_degrees))
+
+res8
+ 
+
+#Q9. Create a dataframe showing the courses, departments they are associated with, the teacher in each course, and the number of students enrolled in the course (for each course, department and teacher show the names).
+res9 <- cbind(stud_class_course_dep)
+res9 <- subset(res9, select = -c(FirstName, LastName, Gender))
+res9 <- inner_join(res9, teachers, by="TeacherId")
+res9$FirstName = trimws(res9$FirstName)
+res9 <- res9 %>%
+  group_by(CourseId,CourseName,DepartmentName,FirstName,LastName) %>%
+  summarise(students = n())
+res9
+
+#Q10. Create a dataframe showing the students, the number of courses they take, the average of the grades per class, and their overall average (for each student show the student name).
+
+library(tidyverse)
+
+studs_aggr <- cbind(stud_class_course_dep)
+studs_aggr <- studs_aggr %>% 
+      group_by(StudentId) %>%
+      summarise(
+        total_avg_degree = mean(degree),
+        courses = n())
+
+
+res10 <- cbind(stud_class_course_dep)
+res10$FirstName = trimws(res10$FirstName)
+res10 <- res10 %>%
+  group_by(StudentId, FirstName, LastName, DepartmentName) %>%
+  summarise(
+            avg_degree = mean(degree)) %>% 
+  pivot_wider(names_from = "DepartmentName", values_from = "avg_degree")  
+
+res10 <- inner_join(res10, studs_aggr, by='StudentId')
+res10
